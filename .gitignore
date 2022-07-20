@@ -1,0 +1,6 @@
+*.pyc
+venv/
+
+app-keypair
+app-keypair.pub
+secrets.md
