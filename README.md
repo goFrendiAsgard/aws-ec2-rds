@@ -65,5 +65,5 @@ pulumi stack output app-rds-address
 # Remote SSH to EC2
 
 ```bash
-ssh -i app-keypair ubuntu@$(pulumi stack output app-ec2-public-dns)
+ssh -i app-keypair ubuntu@$(pulumi stack output app-eip-public-dns)
 ```

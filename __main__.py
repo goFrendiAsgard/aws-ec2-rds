@@ -179,6 +179,12 @@ app_rds = aws.rds.Instance(
 # Create a keypair to access the EC2 instance:
 app_keypair = aws.ec2.KeyPair('app-keypair', public_key=public_key)
 
+app_ec2_user_data = '''
+#!/bin/bash
+echo "Hello, World!" > index.html
+nohup python -m SimpleHTTPServer 80 &
+'''
+
 # Create an EC2 instance to run app (after RDS is ready).
 app_ec2 = aws.ec2.Instance(
     'app-instance',
@@ -193,13 +199,13 @@ app_ec2 = aws.ec2.Instance(
     # Only create after RDS is provisioned.
     opts=pulumi.ResourceOptions(depends_on=[app_rds]),
     # Define what to do once created
-    user_data='echo "anu" > anu.txt',
-    user_data_replace_on_change=False
+    user_data=app_ec2_user_data,
+    user_data_replace_on_change=True
 )
 
 # Give our EC2 instance an elastic IP address.
 app_eip = aws.ec2.Eip('app-eip', instance=app_ec2.id)
 
 pulumi.export('app-ec2-public-dns', app_ec2.public_dns)
-pulumi.export('app-eip-address', app_eip.address)
+pulumi.export('app-eip-public-dns', app_eip.public_dns)
 pulumi.export('app-rds-address', app_rds.address)
