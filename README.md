@@ -44,3 +44,9 @@ pulumi config set dbPassword Alch3mist --secret
 pulumi login --local
 pulumi up
 ```
+
+# Remote SSH to EC2
+
+```bash
+ssh -i app-keypair ec2-user@18.143.39.223
+```
