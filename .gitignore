@@ -1,6 +1,7 @@
 *.pyc
 venv/
 
+pulumiLock
 app-keypair
 app-keypair.pub
 secrets.md

@@ -120,6 +120,29 @@ rds_allow_rule = aws.ec2.SecurityGroup(
     }
 )
 
+# Security group for all:
+all_allow_rule = aws.ec2.SecurityGroup(
+    'all-allow-rule',
+    vpc_id=prod_vpc.id,
+    ingress=[aws.ec2.SecurityGroupIngressArgs(
+        from_port=0,
+        to_port=0,
+        protocol='-1',
+        security_groups=['0.0.0.0/0'],
+    )],
+    # allow all outbound traffic.
+    egress=[aws.ec2.SecurityGroupEgressArgs(
+        from_port=0,
+        to_port=0,
+        protocol='-1',
+        cidr_blocks=['0.0.0.0/0'],
+    )],
+    tags={
+        'Name': 'allow ec2',
+    }
+)
+
+
 # Place the RDS instance into private subnets:
 rds_subnet_grp = aws.rds.SubnetGroup(
     'rds-subnet-grp',

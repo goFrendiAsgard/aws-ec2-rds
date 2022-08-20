@@ -11,6 +11,9 @@ db_username = config.get('dbUsername') or 'admin'
 db_password = config.require_secret('dbPassword')
 ec2_instance_size = config.get('ec2InstanceSize') or 't3.small'
 
+s3_bucket = aws.s3.Bucket("data-bucket")
+s3_bucket_access_point = aws.s3.AccessPoint("exampleAccessPoint", bucket=s3_bucket.id)
+
 # Dynamically query for the AMI in this region.
 ami = aws.ec2.get_ami(
     # owners=['amazon'],
@@ -52,9 +55,8 @@ app_keypair = aws.ec2.KeyPair('app-keypair', public_key=public_key)
 # Note: user_data is executed by root user, and the default directory is /
 app_ec2_user_data = '''#!/bin/bash
 apt-get update -y
-apt-get install golang -y
-sudo su - ubuntu
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/state-alchemists/zaruba/master/install.sh)"
+apt-get install golang mysql-client -y
+echo "hello" > /home/ubuntu/hello
 '''
 
 # Create an EC2 instance to run app (after RDS is ready).
@@ -81,3 +83,12 @@ app_eip = aws.ec2.Eip('app-eip', instance=app_ec2.id)
 pulumi.export('app-ec2-public-dns', app_ec2.public_dns)
 pulumi.export('app-eip-public-dns', app_eip.public_dns)
 pulumi.export('app-rds-address', app_rds.address)
+pulumi.export('vpc-id', vpc.prod_vpc.id)
+pulumi.export('sg-ec2-id', vpc.ec2_allow_rule.id)
+pulumi.export('sg-rds-id', vpc.rds_allow_rule.id)
+pulumi.export('sg-all-id', vpc.all_allow_rule.id)
+pulumi.export('s3-bucket-id', s3_bucket.id)
+pulumi.export('s3-bucket-access-point-id', s3_bucket_access_point.id)
+pulumi.export('subnet-public1-id', vpc.prod_subnet_public1.id)
+pulumi.export('subnet-private1-id', vpc.prod_subnet_private1.id)
+pulumi.export('subnet-private2-id', vpc.prod_subnet_private2.id)

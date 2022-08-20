@@ -36,7 +36,7 @@ Follow this [guide](https://www.pulumi.com/blog/deploy-wordpress-aws-pulumi-ansi
 Set configurations:
 
 ```bash
-pulumi config set aws:region us-east-1
+pulumi config set aws:region ap-southeast-1
 pulumi config set publicKeyPath app-keypair.pub
 pulumi config set privateKeyPath app-keypair
 pulumi config set dbPassword Alch3mist --secret
@@ -45,27 +45,37 @@ pulumi config set dbPassword Alch3mist --secret
 Set passphrase (we don't use any):
 
 ```bash
+mkdir -p ./pulumiLock
+export PULUMI_BACKEND_URL="file://./pulumiLock"
 export PULUMI_CONFIG_PASSPHRASE=
 ```
 
 Create EC2 and RDS
 
 ```bash
-pulumi login --local
+# pulumi login --local
 pulumi up
 ```
 
 Show EC2 and RDS address
 
 ```bash
-# pulumi stack output app-ec2-public-dns
-pulumi stack output app-eip-public-dns
-pulumi stack output app-rds-address
+pulumi stack output
 ```
 
 # Remote SSH to EC2
 
 ```bash
-# ssh -i app-keypair ubuntu@$(pulumi stack output app-ec2-public-dns)
 ssh -i app-keypair ubuntu@$(pulumi stack output app-eip-public-dns)
 ```
+
+# Populate RDS
+
+```bash
+mysql -u admin -pAlch3mist --host <app-rds-address>
+# Paste from ./sql
+```
+
+# Tutorial
+
+[Glue tutorial](https://aws.amazon.com/blogs/big-data/data-preparation-using-an-amazon-rds-for-mysql-database-with-aws-glue-databrew/)
