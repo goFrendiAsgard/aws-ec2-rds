@@ -56,8 +56,9 @@ app_keypair = aws.ec2.KeyPair('app-keypair', public_key=public_key)
 app_ec2_user_data = '''#!/bin/bash
 apt-get update -y
 apt-get install golang mysql-client -y
-echo "hello" > /home/ubuntu/hello
-'''
+echo "mysql -u admin -pAlch3mist --host {host}" > /home/ubuntu/mysql-connect
+chmod 755 /home/ubuntu/mysql-connect
+'''.format(host=app_rds.address)
 
 # Create an EC2 instance to run app (after RDS is ready).
 app_ec2 = aws.ec2.Instance(
