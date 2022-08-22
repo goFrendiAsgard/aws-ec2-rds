@@ -22,21 +22,31 @@ prod_subnet_public1 = aws.ec2.Subnet(
     availability_zone=availability_zones.names[0]
 )
 
-# Create private subnets for RDS:
-prod_subnet_private1 = aws.ec2.Subnet(
-    'prod-subnet-private-1',
+# Create public subnets for the EC2 instance.
+prod_subnet_public2 = aws.ec2.Subnet(
+    'prod-subnet-public-2',
     vpc_id=prod_vpc.id,
-    cidr_block='10.192.20.0/24',
-    map_public_ip_on_launch=False,
+    cidr_block='10.192.1.0/24',
+    map_public_ip_on_launch=True,
     availability_zone=availability_zones.names[1]
 )
-prod_subnet_private2 = aws.ec2.Subnet(
-    'prod-subnet-private-2',
-    vpc_id=prod_vpc.id,
-    cidr_block='10.192.21.0/24',
-    map_public_ip_on_launch=False,
-    availability_zone=availability_zones.names[2]
-)
+
+
+# # Create private subnets for RDS:
+# prod_subnet_private1 = aws.ec2.Subnet(
+#     'prod-subnet-private-1',
+#     vpc_id=prod_vpc.id,
+#     cidr_block='10.192.20.0/24',
+#     map_public_ip_on_launch=False,
+#     availability_zone=availability_zones.names[1]
+# )
+# prod_subnet_private2 = aws.ec2.Subnet(
+#     'prod-subnet-private-2',
+#     vpc_id=prod_vpc.id,
+#     cidr_block='10.192.21.0/24',
+#     map_public_ip_on_launch=False,
+#     availability_zone=availability_zones.names[2]
+# )
 
 # Create a gateway for internet connectivity:
 prod_igw = aws.ec2.InternetGateway('prod-igw', vpc_id=prod_vpc.id)
@@ -128,7 +138,7 @@ all_allow_rule = aws.ec2.SecurityGroup(
         from_port=0,
         to_port=0,
         protocol='-1',
-        security_groups=['0.0.0.0/0'],
+        cidr_blocks=['0.0.0.0/0'],
     )],
     # allow all outbound traffic.
     egress=[aws.ec2.SecurityGroupEgressArgs(
@@ -138,7 +148,7 @@ all_allow_rule = aws.ec2.SecurityGroup(
         cidr_blocks=['0.0.0.0/0'],
     )],
     tags={
-        'Name': 'allow ec2',
+        'Name': 'allow all',
     }
 )
 
@@ -147,7 +157,9 @@ all_allow_rule = aws.ec2.SecurityGroup(
 rds_subnet_grp = aws.rds.SubnetGroup(
     'rds-subnet-grp',
     subnet_ids=[
-        prod_subnet_private1.id,
-        prod_subnet_private2.id,
+        prod_subnet_public1.id,
+        prod_subnet_public2.id
+        # prod_subnet_private1.id,
+        # prod_subnet_private2.id,
     ]
 )

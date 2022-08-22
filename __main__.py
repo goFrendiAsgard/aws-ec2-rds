@@ -12,7 +12,30 @@ db_password = config.require_secret('dbPassword')
 ec2_instance_size = config.get('ec2InstanceSize') or 't3.small'
 
 s3_bucket = aws.s3.Bucket("data-bucket")
-s3_bucket_access_point = aws.s3.AccessPoint("exampleAccessPoint", bucket=s3_bucket.id)
+s3_bucket_access_point = aws.s3.AccessPoint(
+    'data-bucket-access-point',
+    bucket=s3_bucket.id,
+    vpc_configuration=aws.s3.AccessPointVpcConfigurationArgs(vpc_id=vpc.prod_vpc.id)
+)
+
+s3_vpc_endpoint = aws.ec2.VpcEndpoint(
+    "s3-vpc-endpoint",
+    vpc_id=vpc.prod_vpc.id,
+    vpc_endpoint_type='Gateway',
+    service_name="com.amazonaws.ap-southeast-1.s3",
+    route_table_ids=[vpc.prod_public_rt.id]
+    # subnet_ids=[vpc.prod_subnet_public1, vpc.prod_subnet_public2]
+)
+
+glue_vpc_endpoint = aws.ec2.VpcEndpoint(
+    "s3-vpc-endpoint",
+    vpc_id=vpc.prod_vpc.id,
+    vpc_endpoint_type='Interface',
+    service_name='com.amazonaws.ap-southeast-1.glue',
+    route_table_ids=[vpc.prod_public_rt.id]
+    # subnet_ids=[vpc.prod_subnet_public1, vpc.prod_subnet_public2]
+)
+
 
 # Dynamically query for the AMI in this region.
 ami = aws.ec2.get_ami(
@@ -53,12 +76,12 @@ app_rds = aws.rds.Instance(
 app_keypair = aws.ec2.KeyPair('app-keypair', public_key=public_key)
 
 # Note: user_data is executed by root user, and the default directory is /
-app_ec2_user_data = '''#!/bin/bash
+app_ec2_user_data_template = '''#!/bin/bash
 apt-get update -y
 apt-get install golang mysql-client -y
 echo "mysql -u admin -pAlch3mist --host {host}" > /home/ubuntu/mysql-connect
 chmod 755 /home/ubuntu/mysql-connect
-'''.format(host=app_rds.address)
+'''
 
 # Create an EC2 instance to run app (after RDS is ready).
 app_ec2 = aws.ec2.Instance(
@@ -74,7 +97,7 @@ app_ec2 = aws.ec2.Instance(
     # Only create after RDS is provisioned.
     opts=pulumi.ResourceOptions(depends_on=[app_rds]),
     # Define what to do once created
-    user_data=app_ec2_user_data,
+    user_data= app_rds.address.apply(lambda host: app_ec2_user_data_template.format(host=host)),
     user_data_replace_on_change=False
 )
 
@@ -90,6 +113,9 @@ pulumi.export('sg-rds-id', vpc.rds_allow_rule.id)
 pulumi.export('sg-all-id', vpc.all_allow_rule.id)
 pulumi.export('s3-bucket-id', s3_bucket.id)
 pulumi.export('s3-bucket-access-point-id', s3_bucket_access_point.id)
+pulumi.export('s3-vpc-endpoint-id-id', s3_vpc_endpoint.id)
+pulumi.export('glue-vpc-endpoint-id-id', glue_vpc_endpoint.id)
 pulumi.export('subnet-public1-id', vpc.prod_subnet_public1.id)
-pulumi.export('subnet-private1-id', vpc.prod_subnet_private1.id)
-pulumi.export('subnet-private2-id', vpc.prod_subnet_private2.id)
+pulumi.export('subnet-public2-id', vpc.prod_subnet_public2.id)
+# pulumi.export('subnet-private1-id', vpc.prod_subnet_private1.id)
+# pulumi.export('subnet-private2-id', vpc.prod_subnet_private2.id)
