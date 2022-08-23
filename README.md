@@ -79,3 +79,5 @@ mysql -u admin -pAlch3mist --host <app-rds-address>
 # Tutorial
 
 [Glue tutorial](https://aws.amazon.com/blogs/big-data/data-preparation-using-an-amazon-rds-for-mysql-database-with-aws-glue-databrew/)
+
+https://docs.aws.amazon.com/quicksight/latest/user/troubleshoot-athena-insufficient-permissions.html

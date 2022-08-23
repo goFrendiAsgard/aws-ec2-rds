@@ -13,12 +13,13 @@ prod_vpc = aws.ec2.Vpc(
     instance_tenancy='default'
 )
 
+
 # Create public subnets for the EC2 instance.
 prod_subnet_public1 = aws.ec2.Subnet(
     'prod-subnet-public-1',
     vpc_id=prod_vpc.id,
     cidr_block='10.192.0.0/24',
-    map_public_ip_on_launch=True,
+    map_public_ip_on_launch=True, # False for private subnet
     availability_zone=availability_zones.names[0]
 )
 
@@ -27,26 +28,9 @@ prod_subnet_public2 = aws.ec2.Subnet(
     'prod-subnet-public-2',
     vpc_id=prod_vpc.id,
     cidr_block='10.192.1.0/24',
-    map_public_ip_on_launch=True,
+    map_public_ip_on_launch=True, # False for private subnet
     availability_zone=availability_zones.names[1]
 )
-
-
-# # Create private subnets for RDS:
-# prod_subnet_private1 = aws.ec2.Subnet(
-#     'prod-subnet-private-1',
-#     vpc_id=prod_vpc.id,
-#     cidr_block='10.192.20.0/24',
-#     map_public_ip_on_launch=False,
-#     availability_zone=availability_zones.names[1]
-# )
-# prod_subnet_private2 = aws.ec2.Subnet(
-#     'prod-subnet-private-2',
-#     vpc_id=prod_vpc.id,
-#     cidr_block='10.192.21.0/24',
-#     map_public_ip_on_launch=False,
-#     availability_zone=availability_zones.names[2]
-# )
 
 # Create a gateway for internet connectivity:
 prod_igw = aws.ec2.InternetGateway('prod-igw', vpc_id=prod_vpc.id)
@@ -67,6 +51,34 @@ prod_rta_public_subnet1 = aws.ec2.RouteTableAssociation(
     'prod-rta-public-subnet-1',
     subnet_id=prod_subnet_public1.id,
     route_table_id=prod_public_rt.id
+)
+prod_rta_public_subnet2 = aws.ec2.RouteTableAssociation(
+    'prod-rta-public-subnet-2',
+    subnet_id=prod_subnet_public2.id,
+    route_table_id=prod_public_rt.id
+)
+
+
+# Security group for glue:
+all_allow_rule = aws.ec2.SecurityGroup(
+    'all-allow-rule',
+    vpc_id=prod_vpc.id,
+    ingress=[aws.ec2.SecurityGroupIngressArgs(
+        from_port=0,
+        to_port=0,
+        protocol='-1',
+        cidr_blocks=['0.0.0.0/0'],
+    )],
+    # allow all outbound traffic.
+    egress=[aws.ec2.SecurityGroupEgressArgs(
+        from_port=0,
+        to_port=0,
+        protocol='-1',
+        cidr_blocks=['0.0.0.0/0'],
+    )],
+    tags={
+        'Name': 'all-allowed-rule',
+    }
 )
 
 # Security group for EC2:
@@ -103,7 +115,7 @@ ec2_allow_rule = aws.ec2.SecurityGroup(
         cidr_blocks=['0.0.0.0/0'],
     )],
     tags={
-        'Name': 'allow ssh,http,https',
+        'Name': 'ec2-allow-rule',
     }
 )
 
@@ -116,7 +128,7 @@ rds_allow_rule = aws.ec2.SecurityGroup(
         from_port=3306,
         to_port=3306,
         protocol='tcp',
-        security_groups=[ec2_allow_rule.id],
+        security_groups=[ec2_allow_rule.id, all_allow_rule.id],
     )],
     # allow all outbound traffic.
     egress=[aws.ec2.SecurityGroupEgressArgs(
@@ -126,32 +138,9 @@ rds_allow_rule = aws.ec2.SecurityGroup(
         cidr_blocks=['0.0.0.0/0'],
     )],
     tags={
-        'Name': 'allow ec2',
+        'Name': 'rds-allow-rule',
     }
 )
-
-# Security group for all:
-all_allow_rule = aws.ec2.SecurityGroup(
-    'all-allow-rule',
-    vpc_id=prod_vpc.id,
-    ingress=[aws.ec2.SecurityGroupIngressArgs(
-        from_port=0,
-        to_port=0,
-        protocol='-1',
-        cidr_blocks=['0.0.0.0/0'],
-    )],
-    # allow all outbound traffic.
-    egress=[aws.ec2.SecurityGroupEgressArgs(
-        from_port=0,
-        to_port=0,
-        protocol='-1',
-        cidr_blocks=['0.0.0.0/0'],
-    )],
-    tags={
-        'Name': 'allow all',
-    }
-)
-
 
 # Place the RDS instance into private subnets:
 rds_subnet_grp = aws.rds.SubnetGroup(
@@ -162,4 +151,30 @@ rds_subnet_grp = aws.rds.SubnetGroup(
         # prod_subnet_private1.id,
         # prod_subnet_private2.id,
     ]
+)
+
+# You need this so that your VPC can access s3
+s3_vpc_endpoint = aws.ec2.VpcEndpoint(
+    "s3-vpc-endpoint",
+    vpc_id=prod_vpc.id,
+    vpc_endpoint_type='Gateway',
+    service_name="com.amazonaws.ap-southeast-1.s3",
+    route_table_ids=[prod_public_rt.id],
+    tags={
+        'Name': 's3-endpoint',
+    }
+)
+
+# You need this so that your VPC can access glue
+glue_vpc_endpoint = aws.ec2.VpcEndpoint(
+    "glue-vpc-endpoint",
+    vpc_id=prod_vpc.id,
+    vpc_endpoint_type='Interface',
+    service_name='com.amazonaws.ap-southeast-1.glue',
+    subnet_ids=[prod_subnet_public1.id, prod_subnet_public2.id],
+    security_group_ids=[ec2_allow_rule.id, rds_allow_rule.id],
+    private_dns_enabled=True,
+    tags={
+        'Name': 'glue-endpoint',
+    }
 )

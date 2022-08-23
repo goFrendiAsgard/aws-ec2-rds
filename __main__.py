@@ -11,30 +11,20 @@ db_username = config.get('dbUsername') or 'admin'
 db_password = config.require_secret('dbPassword')
 ec2_instance_size = config.get('ec2InstanceSize') or 't3.small'
 
-s3_bucket = aws.s3.Bucket("data-bucket")
-s3_bucket_access_point = aws.s3.AccessPoint(
+s3_bucket_data = aws.s3.Bucket("data-bucket")
+s3_bucket_data_access_point = aws.s3.AccessPoint(
     'data-bucket-access-point',
-    bucket=s3_bucket.id,
+    bucket=s3_bucket_data.id,
     vpc_configuration=aws.s3.AccessPointVpcConfigurationArgs(vpc_id=vpc.prod_vpc.id)
 )
 
-s3_vpc_endpoint = aws.ec2.VpcEndpoint(
-    "s3-vpc-endpoint",
-    vpc_id=vpc.prod_vpc.id,
-    vpc_endpoint_type='Gateway',
-    service_name="com.amazonaws.ap-southeast-1.s3",
-    route_table_ids=[vpc.prod_public_rt.id]
-    # subnet_ids=[vpc.prod_subnet_public1, vpc.prod_subnet_public2]
+s3_bucket_result = aws.s3.Bucket("result-bucket")
+s3_bucket_result_access_point = aws.s3.AccessPoint(
+    'result-bucket-access-point',
+    bucket=s3_bucket_result.id,
+    vpc_configuration=aws.s3.AccessPointVpcConfigurationArgs(vpc_id=vpc.prod_vpc.id)
 )
 
-glue_vpc_endpoint = aws.ec2.VpcEndpoint(
-    "s3-vpc-endpoint",
-    vpc_id=vpc.prod_vpc.id,
-    vpc_endpoint_type='Interface',
-    service_name='com.amazonaws.ap-southeast-1.glue',
-    route_table_ids=[vpc.prod_public_rt.id]
-    # subnet_ids=[vpc.prod_subnet_public1, vpc.prod_subnet_public2]
-)
 
 
 # Dynamically query for the AMI in this region.
@@ -111,11 +101,13 @@ pulumi.export('vpc-id', vpc.prod_vpc.id)
 pulumi.export('sg-ec2-id', vpc.ec2_allow_rule.id)
 pulumi.export('sg-rds-id', vpc.rds_allow_rule.id)
 pulumi.export('sg-all-id', vpc.all_allow_rule.id)
-pulumi.export('s3-bucket-id', s3_bucket.id)
-pulumi.export('s3-bucket-access-point-id', s3_bucket_access_point.id)
-pulumi.export('s3-vpc-endpoint-id-id', s3_vpc_endpoint.id)
-pulumi.export('glue-vpc-endpoint-id-id', glue_vpc_endpoint.id)
+pulumi.export('s3-bucket-data-id', s3_bucket_data.id)
+pulumi.export('s3-bucket-data-access-point-id', s3_bucket_data_access_point.id)
+pulumi.export('s3-bucket-result-id', s3_bucket_result.id)
+pulumi.export('s3-bucket-result-access-point-id', s3_bucket_result_access_point.id)
+pulumi.export('s3-vpc-endpoint-id-id', vpc.s3_vpc_endpoint.id)
+pulumi.export('glue-vpc-endpoint-id-id', vpc.glue_vpc_endpoint.id)
 pulumi.export('subnet-public1-id', vpc.prod_subnet_public1.id)
 pulumi.export('subnet-public2-id', vpc.prod_subnet_public2.id)
-# pulumi.export('subnet-private1-id', vpc.prod_subnet_private1.id)
-# pulumi.export('subnet-private2-id', vpc.prod_subnet_private2.id)
+pulumi.export('prod-rta-public-subnet1-id', vpc.prod_rta_public_subnet1.id)
+pulumi.export('prod-rta-public-subnet2-id', vpc.prod_rta_public_subnet2.id)

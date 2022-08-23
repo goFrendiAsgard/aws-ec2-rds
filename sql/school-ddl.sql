@@ -26,4 +26,4 @@ CREATE TABLE `student`.`study_details_tbl` (
   `year` varchar(4) DEFAULT NULL,
   `marks` int(11) DEFAULT 0,
   PRIMARY KEY (`school_id`,`student_id`)
-) ;
+);
