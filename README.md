@@ -76,8 +76,16 @@ mysql -u admin -pAlch3mist --host <app-rds-address>
 # Paste from ./sql
 ```
 
-# Tutorial
+# Architecture
+
+![](images/architecture.png)
+
+# Demo
+
+[video](https://drive.google.com/file/d/1dw-1pw-_yW8-UtbfgXF7HeSb59aONnxx/view?usp=sharing)
+
+# References
 
 [Glue tutorial](https://aws.amazon.com/blogs/big-data/data-preparation-using-an-amazon-rds-for-mysql-database-with-aws-glue-databrew/)
 
-https://docs.aws.amazon.com/quicksight/latest/user/troubleshoot-athena-insufficient-permissions.html
+[Athena troubleshooting: insufficient permission](https://docs.aws.amazon.com/quicksight/latest/user/troubleshoot-athena-insufficient-permissions.html)
